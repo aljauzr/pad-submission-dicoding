@@ -56,14 +56,14 @@ with tab2:
     st.subheader("Pertanyaan 1: Kapan waktu paling optimal untuk menyediakan lebih banyak sepeda untuk direntalkan?")
     st.text('Untuk menjawab pertanyaan ini, kita akan membuat visualisasi jumlah penyewa sepeda berdasarkan musim, bulan, jam, hari, dan kondisi hari.')
     st.text('Visualisasi ini akan membantu kita memahami kapan waktu paling ramai penyewaan sepeda.')
-    st.image("img1.png", caption="Visualisasi: Tren Penyewaan Sepeda Berdasarkan Waktu Terbaik", use_container_width=True)
+    st.image("https://raw.githubusercontent.com/aljauzr/pad-submission-dicoding/refs/heads/main/dashboard/img1.png", caption="Visualisasi: Tren Penyewaan Sepeda Berdasarkan Waktu Terbaik", use_container_width=True)
     st.text('Berdasarkan visualisasi data tersebut, waktu paling optimal untuk menyediakan lebih banyak sepeda untuk direntalkan adalah pada musim gugur (fall), pada bulan Juni atau September, jam 5 sore, hari Kamis atau Jumat, dan pada saat hari kerja (tidak libur).')
 
 with tab3:
     st.subheader("Pertanyaan 2: Bagaimana pengaruh cuaca terhadap jumlah pengguna sepeda (baik kasual maupun terdaftar)?")
     st.text('Untuk menjawab pertanyaan ini, kita akan membuat visualisasi jumlah penyewa sepeda berdasarkan kondisi cuaca, suhu sebenarnya, suhu yang dirasakan, kelembapan, dan kecepatan angin.')
     st.text('Visualisasi ini akan membantu kita memahami bagaimana pengaruh cuaca terhadap jumlah perentalan sepeda.')
-    st.image("img2.png", caption="Visualisasi: Tren Penyewaan Sepeda Berdasarkan Pengaruh Cuaca", use_container_width=True)
+    st.image("https://raw.githubusercontent.com/aljauzr/pad-submission-dicoding/refs/heads/main/dashboard/img2.png", caption="Visualisasi: Tren Penyewaan Sepeda Berdasarkan Pengaruh Cuaca", use_container_width=True)
     st.text('Berdasarkan visualisasi data tersebut, pengaruh cuaca terhadap jumlah penyewa sepeda adalah sebagai berikut:')
     st.text('1. Kondisi cuaca yang cerah membuat orang-orang lebih ingin merental sepeda, sedangkan jika turun hujan hingga badai, jumlah perentalan sepeda semakin sedikit.') 
     st.text('2. Untuk kondisi suhu, suhu normal (yaitu pada rentang 24-30°C) adalah suhu terbaik untuk merental sepeda. Suhu yang lebih dingin (berkisar antara 18-24°C) juga lebih menarik minat orang untuk merental sepeda dibanding suhu yang lebih panas (berkisar antara 30-36°C)')
