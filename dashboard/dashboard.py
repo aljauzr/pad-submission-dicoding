@@ -29,7 +29,7 @@ with tab1:
     st.dataframe(day_df.head(10))
     st.text('Perbedaan antara data hour.csv dan day.csv adalah pada data hour.csv terdapat kolom "hr" (0-23) yang menunjukkan jam perentalan sepeda, sedangkan pada data day.csv tidak ada kolom tersebut.')
     st.text('Penjelasan kolom:')
-    st.text('- instant: ID dari setiap jam')
+    st.text('- instant: ID dari setiap data')
     st.text('- dteday: Tanggal perentalan sepeda')
     st.text('- season: Musim (1: Spring, 2: Summer, 3: Fall, 4: Winter)')
     st.text('- yr: Tahun (0: 2011, 1: 2012)')
