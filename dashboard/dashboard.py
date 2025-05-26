@@ -1,6 +1,7 @@
 # app.py
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 # Exploratory Data Analysis (EDA), Data Visualization, & Explanatory Analysis
 import seaborn as sns
@@ -122,13 +123,26 @@ with tab2:
     st.subheader("Pertanyaan 1: Kapan waktu paling optimal untuk menyediakan lebih banyak sepeda untuk direntalkan?")
     st.text('Untuk menjawab pertanyaan ini, kita akan membuat visualisasi jumlah penyewa sepeda berdasarkan musim, bulan, jam, hari, dan kondisi hari.')
     st.text('Visualisasi ini akan membantu kita memahami kapan waktu paling ramai penyewaan sepeda.')
+    # Pilihan tahun
+    tahun_pilihan = st.selectbox(
+        'Pilih Tahun Data yang Ditampilkan:',
+        options=['Gabungan', 2011, 2012],
+        index=0,  # default: Gabungan
+        key='tahun_tab2'
+    )
+
+    # Filter dataframe berdasarkan pilihan
+    if tahun_pilihan == 'Gabungan':
+        hour_df_filtered = hour_df.copy()  # tidak difilter
+    else:
+        hour_df_filtered = hour_df[hour_df['yr'] == tahun_pilihan]
     
     # Buat kanvas visualisasi
     fig, axs = plt.subplots(3, 2, figsize=(16, 14))
     plt.subplots_adjust(hspace=0.4, wspace=0.3)
 
     # Visualisasi 1
-    mean_cnt_per_season = hour_df.groupby('season')['cnt'].mean().reset_index()
+    mean_cnt_per_season = hour_df_filtered.groupby('season')['cnt'].mean().reset_index()
     max_value = mean_cnt_per_season['cnt'].max()
     colors = ['#72BCD4' if val == max_value else '#D3D3D3' for val in mean_cnt_per_season['cnt']]
     sns.barplot(data=mean_cnt_per_season, x='season', y='cnt', palette=colors, hue='season', legend=False, ax=axs[0, 0])
@@ -139,11 +153,17 @@ with tab2:
     axs[0, 0].set_ylabel('Rata-Rata Jumlah')
 
     # Visualisasi 2
-    mean_cnt_per_month = hour_df.groupby('mnth', observed=True)['cnt'].mean().reset_index()
+    mean_cnt_per_month = hour_df_filtered.groupby('mnth', observed=True)['cnt'].mean().reset_index()
     month_order = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
     mean_cnt_per_month['mnth'] = pd.Categorical(mean_cnt_per_month['mnth'], categories=month_order, ordered=True)
     mean_cnt_per_month = mean_cnt_per_month.sort_values('mnth')
-    colors = ["#D3D3D3"]*5 + ["#72BCD4"] + ["#D3D3D3"]*2 + ["#72BCD4"] + ["#D3D3D3"]*3
+    # Tentukan warna berdasarkan tahun yang dipilih
+    if tahun_pilihan == 'Gabungan':
+        colors = ["#D3D3D3"]*5 + ["#72BCD4"] + ["#D3D3D3"]*2 + ["#72BCD4"] + ["#D3D3D3"]*3
+    elif tahun_pilihan == 2011:
+        colors = ["#D3D3D3"]*5 + ["#72BCD4"] + ["#D3D3D3"]*6
+    elif tahun_pilihan == 2012:
+        colors = ["#D3D3D3"]*8 + ["#72BCD4"] + ["#D3D3D3"]*2
     sns.barplot(data=mean_cnt_per_month, y='mnth', x='cnt', palette=colors, hue='mnth', ax=axs[0, 1])
     for i, row in mean_cnt_per_month.iterrows():
         axs[0, 1].text(row['cnt'] + 1, row['mnth'], round(row['cnt']), va='center', color='black')
@@ -152,7 +172,7 @@ with tab2:
     axs[0, 1].set_ylabel('Bulan')
 
     # Visualisasi 3
-    mean_cnt_per_hour = hour_df.groupby('hr')['cnt'].mean().reset_index()
+    mean_cnt_per_hour = hour_df_filtered.groupby('hr')['cnt'].mean().reset_index()
     sns.lineplot(data=mean_cnt_per_hour, x='hr', y='cnt', marker='o', color='#72BCD4', ax=axs[1, 0])
     axs[1, 0].set_title('Rata-Rata Jumlah Perentalan Sepeda per Jam')
     axs[1, 0].set_xlabel('Jam')
@@ -161,11 +181,17 @@ with tab2:
     axs[1, 0].grid(True)
 
     # Visualisasi 4
-    mean_cnt_per_weekday = hour_df.groupby('weekday', observed=True)['cnt'].mean().reset_index()
+    mean_cnt_per_weekday = hour_df_filtered.groupby('weekday', observed=True)['cnt'].mean().reset_index()
     weekday_order = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     mean_cnt_per_weekday['weekday'] = pd.Categorical(mean_cnt_per_weekday['weekday'], categories=weekday_order, ordered=True)
     mean_cnt_per_weekday = mean_cnt_per_weekday.sort_values('weekday')
-    colors = ["#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3", "#72BCD4", "#72BCD4", "#D3D3D3"]
+    # Tentukan warna berdasarkan tahun yang dipilih
+    if tahun_pilihan == 'Gabungan':
+        colors = ["#D3D3D3"]*4 + ["#72BCD4"]*2 + ["#D3D3D3"]
+    elif tahun_pilihan == 2011:
+        colors = ["#D3D3D3"]*2 + ["#72BCD4"] + ["#D3D3D3"]*4
+    elif tahun_pilihan == 2012:
+        colors = ["#D3D3D3"]*4 + ["#72BCD4"] + ["#D3D3D3"]*2
     sns.barplot(data=mean_cnt_per_weekday, y='weekday', x='cnt', palette=colors, hue='weekday', ax=axs[1, 1])
     for i, row in mean_cnt_per_weekday.iterrows():
         axs[1, 1].text(row['cnt'] + 1, row['weekday'], round(row['cnt']), va='center', color='black')
@@ -174,7 +200,7 @@ with tab2:
     axs[1, 1].set_ylabel('Hari')
 
     # Visualisasi 5
-    sum_cnt_per_workingday = hour_df.groupby('workingday')['cnt'].sum().reset_index()
+    sum_cnt_per_workingday = hour_df_filtered.groupby('workingday')['cnt'].mean().reset_index()
     colors = ["#D3D3D3", "#72BCD4"]
     sns.barplot(data=sum_cnt_per_workingday, x='workingday', y='cnt', palette=colors, hue='workingday', legend=False, ax=axs[2, 0])
     for index, row in sum_cnt_per_workingday.iterrows():
@@ -185,40 +211,114 @@ with tab2:
 
     # Kosongkan subplot terakhir
     axs[2, 1].axis('off')
-
     # Tampilkan di Streamlit
     st.pyplot(fig)
+
     st.text('Berdasarkan hasil analisis data, waktu di mana jumlah perentalan sepeda tertinggi terjadi pada waktu berikut:')
-    st.text('Musim: Fall (Musim Gugur)')
-    st.text('Bulan: Juni dan September')
-    st.text('Jam: 17:00 (5 sore)')
-    st.text('Hari: Kamis dan Jumat')
-    st.text('Kondisi Hari: Tidak Libur (Hari Kerja)')
+    st.text('Musim: Fall (Musim Gugur) -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Bulan: Juni (2011), September (2012), dan Juni & September (Tahun Gabungan)')
+    st.text('Jam: 17:00 (5 sore) -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Hari: Selasa (2011), Kamis (2012), dan Kamis & Jumat (Tahun Gabungan)')
+    st.text('Kondisi Hari: Tidak Libur (Hari Kerja) -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
     st.text('Sedangkan untuk waktu di mana jumlah perentalan sepeda terendah terjadi pada waktu berikut:')
-    st.text('Musim: Spring (Musim Semi)')
-    st.text('Bulan: Januari')
-    st.text('Jam: 04:00 (4 pagi)')
-    st.text('Hari: Minggu')
-    st.text('Kondisi Hari: Libur')
+    st.text('Musim: Spring (Musim Semi) -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Bulan: Januari -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Jam: 04:00 (4 pagi) -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Hari: Rabu (2011) dan Minggu (2012 & Tahun Gabungan)')
+    st.text('Kondisi Hari: Libur -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
     st.text('Maka dari itu, penyedia jasa perentalan sepeda dapat meningkatkan suplai sepeda yang akan direntalkan berdasarkan kondisi di tertinggi yang telah disebutkan di atas dan sebaliknya, penyedia dapat mengurangi suplai sepeda yang akan direntalkan berdasarkan kondisi terendah untuk tujuan efisiensi dan menghindari kejadian yang tidak diinginkan.')
 
 with tab3:
     st.subheader("Pertanyaan 2: Bagaimana pengaruh cuaca terhadap jumlah pengguna sepeda (baik kasual maupun terdaftar)?")
     st.text('Untuk menjawab pertanyaan ini, kita akan membuat visualisasi jumlah penyewa sepeda berdasarkan kondisi cuaca, suhu sebenarnya, suhu yang dirasakan, kelembapan, dan kecepatan angin.')
+    
     st.text('Visualisasi ini akan membantu kita memahami bagaimana pengaruh cuaca terhadap jumlah perentalan sepeda.')
-    st.image("https://raw.githubusercontent.com/aljauzr/pad-submission-dicoding/refs/heads/main/dashboard/img2.png", caption="Visualisasi: Tren Penyewaan Sepeda Berdasarkan Pengaruh Cuaca", use_container_width=True)
+    # Pilihan tahun
+    tahun_pilihan2 = st.selectbox(
+        'Pilih Tahun Data yang Ditampilkan:',
+        options=['Gabungan', 2011, 2012],
+        index=0,  # default: Gabungan
+        key='tahun_tab3'
+    )
+
+    # Filter dataframe berdasarkan pilihan
+    if tahun_pilihan2 == 'Gabungan':
+        hour_df_filtered2 = hour_df.copy()  # tidak difilter
+    else:
+        hour_df_filtered2 = hour_df[hour_df['yr'] == tahun_pilihan2]
+    
+    # Buat kanvas visualisasi
+    fig, axs = plt.subplots(3, 2, figsize=(16, 14))
+    plt.subplots_adjust(hspace=0.4, wspace=0.3)
+
+    # Visualisasi 1
+    mean_cnt_per_weathersit = hour_df_filtered2.groupby('weathersit')['cnt'].mean().reset_index()
+    max_value = mean_cnt_per_weathersit['cnt'].max()
+    colors = ['#72BCD4' if val == max_value else '#D3D3D3' for val in mean_cnt_per_weathersit['cnt']]
+    sns.barplot(data=mean_cnt_per_weathersit, x='weathersit', y='cnt', palette=colors, hue='weathersit', legend=False, ax=axs[0, 0])
+    for index, row in mean_cnt_per_weathersit.iterrows():
+        axs[0, 0].text(index, row['cnt'], round(row['cnt']), color='black', ha="center", va="bottom")
+    axs[0, 0].set_title('Rata-Rata Jumlah Perentalan Sepeda Berdasarkan Kondisi Cuaca')
+    axs[0, 0].set_xlabel('Kondisi Cuaca')
+    axs[0, 0].set_ylabel('Rata-Rata Jumlah')
+
+    # Visualisasi 2
+    hour_df_filtered2['temp_bin'] = pd.cut(hour_df_filtered2['temp_actual'], bins=np.arange(0, 43, 6))
+    temp = hour_df_filtered2.groupby('temp_bin', observed=True)['cnt'].sum().reset_index()
+    max_val = temp['cnt'].max()
+    colors = ['#72BCD4' if val == max_val else '#D3D3D3' for val in temp['cnt']]
+    sns.barplot(data=temp, x='temp_bin', y='cnt', hue='temp_bin', palette=colors, legend=False, ax=axs[0,1])
+    axs[0, 1].set_title('Jumlah Perentalan Sepeda Berdasarkan Suhu Sebenarnya')
+    axs[0, 1].set_xlabel('Suhu Sebenarnya (°C)')
+    axs[0, 1].set_ylabel('Jumlah')
+
+    # Visualisasi 3
+    hour_df_filtered2['atemp_bin'] = pd.cut(hour_df_filtered2['atemp_actual'], bins=np.arange(0, 51, 5))
+    atemp = hour_df_filtered2.groupby('atemp_bin', observed=True)['cnt'].sum().reset_index()
+    max_val = atemp['cnt'].max()
+    colors = ['#72BCD4' if val == max_val else '#D3D3D3' for val in atemp['cnt']]
+    sns.barplot(data=atemp, x='atemp_bin', y='cnt', hue='atemp_bin', palette=colors, legend=False, ax=axs[1, 0])
+    axs[1, 0].set_title('Jumlah Perentalan Sepeda Berdasarkan Suhu yang Dirasakan')
+    axs[1, 0].set_xlabel('Suhu yang Dirasakan (°C)')
+    axs[1, 0].set_ylabel('Jumlah')
+
+    # Visualisasi 4
+    hour_df_filtered2['hum_bin'] = pd.cut(hour_df_filtered2['hum_actual'], bins=np.arange(0, 101, 10))
+    hum = hour_df_filtered2.groupby('hum_bin', observed=True)['cnt'].sum().reset_index()
+    max_val = hum['cnt'].max()
+    colors = ['#72BCD4' if val == max_val else '#D3D3D3' for val in hum['cnt']]
+    sns.barplot(data=hum, x='hum_bin', y='cnt', hue='hum_bin', palette=colors, legend=False, ax=axs[1, 1])
+    axs[1, 1].set_title('Jumlah Perentalan Sepeda Berdasarkan Kelembapan')
+    axs[1, 1].set_xlabel('Kelembapan')
+    axs[1, 1].set_ylabel('Jumlah')
+
+    # Visualisasi 5
+    hour_df_filtered2['windspeed_bin'] = pd.cut(hour_df_filtered2['windspeed_actual'], bins=np.arange(0, 67, 7))
+    wind = hour_df_filtered2.groupby('windspeed_bin', observed=True)['cnt'].sum().reset_index()
+    max_val = wind['cnt'].max()
+    colors = ['#72BCD4' if val == max_val else '#D3D3D3' for val in wind['cnt']]
+    sns.barplot(data=wind, x='windspeed_bin', y='cnt', hue='windspeed_bin', palette=colors, legend=False, ax=axs[2, 0])
+    axs[2, 0].set_title('Jumlah Perentalan Sepeda Berdasarkan Kecepatan Angin')
+    axs[2, 0].set_xlabel('Kecepatan Angin')
+    axs[2, 0].set_ylabel('Jumlah')
+
+    # Kosongkan subplot terakhir
+    axs[2, 1].axis('off')
+    # Tampilkan di Streamlit
+    st.pyplot(fig)
+
     st.text('Berdasarkan hasil analisis data, kondisi cuaca di mana jumlah perentalan sepeda tertinggi terjadi pada kondisi cuaca berikut:')
-    st.text('Kondisi: Cerah dan sedikit berawan')
-    st.text('Suhu Sebenarnya: 24°C-30°C')
-    st.text('Suhu yang Dirasakan: 30°C-35°C')
-    st.text('Kelembapan: 40-50')
-    st.text('Kecepatan Angin: 7-14')
+    st.text('Kondisi: Cerah dan sedikit berawan -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Suhu Sebenarnya: 24°C-30°C -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Suhu yang Dirasakan: 30°C-35°C -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Kelembapan: 50-60 (2011), 30-40 (2012), dan 40-50 (Tahun Gabungan)')
+    st.text('Kecepatan Angin: 7-14 -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
     st.text('Sedangkan untuk kondisi cuaca di mana jumlah perentalan sepeda terendah terjadi pada kondisi cuaca berikut:')
-    st.text('Kondisi: Hujan lebat, bersalju, badai, mendung, dan berkabut')
-    st.text('Suhu Sebenarnya: 36°C-42°C')
-    st.text('Suhu yang Dirasakan: 0°C-5°C')
-    st.text('Kelembapan: 0-10')
-    st.text('Kecepatan Angin: 56-63')
+    st.text('Kondisi: Hujan lebat, bersalju, badai, mendung, dan berkabut -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Suhu Sebenarnya: 0°C-6°C -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Suhu yang Dirasakan: 0°C-5°C -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Kelembapan: 0-10 -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
+    st.text('Kecepatan Angin: 56-63 -> Pada Kedua Tahun (2011 & 2012) dan Tahun Gabungan')
     st.text('Maka dari itu, penyedia jasa perentalan sepeda dapat meningkatkan suplai sepeda yang akan direntalkan berdasarkan kondisi di tertinggi yang telah disebutkan di atas dan sebaliknya, penyedia dapat mengurangi suplai sepeda yang akan direntalkan berdasarkan kondisi terendah untuk tujuan efisiensi dan menghindari kejadian yang tidak diinginkan.')
     st.text('1. Kondisi cuaca yang cerah membuat orang-orang lebih ingin merental sepeda, sedangkan jika turun hujan hingga badai, jumlah perentalan sepeda semakin sedikit.')
     st.text('2. Untuk kondisi suhu, suhu normal (yaitu pada rentang 24-30°C) adalah suhu terbaik untuk merental sepeda. Suhu yang lebih dingin (berkisar antara 18-24°C) juga lebih menarik minat orang untuk merental sepeda dibanding suhu yang lebih panas (berkisar antara 30-36°C)')
