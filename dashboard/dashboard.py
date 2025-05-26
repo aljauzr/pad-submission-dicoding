@@ -2,6 +2,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+# Exploratory Data Analysis (EDA), Data Visualization, & Explanatory Analysis
+import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 
 # Load data
 @st.cache_data
@@ -11,6 +15,69 @@ def load_data():
     return day_df, hour_df
 
 day_df, hour_df = load_data()
+
+# Data Cleaning (Hanya menggunakan hour_df)
+
+# Menghapus kolom 'instant' dan 'holiday' lalu mengubah tipe data kolom 'dteday' dari object menjadi datetime pada data hour.csv
+hour_df.drop(columns=['instant', 'holiday'], inplace=True)
+hour_df['dteday'] = pd.to_datetime(hour_df['dteday'])
+# Penghapusan kolom instant dikarenakan kolom ini hanya mengandung nomor urut dari data yang ada pada dataset
+# Sedangkan kolom holiday tidak diperlukan karena kita sudah memiliki kolom weekday yang menunjukkan hari apa data tersebut diambil
+# Kolom dteday juga diubah menjadi tipe data datetime agar lebih mudah dalam melakukan analisis dan visualisasi data.
+# Mengubah nilai kolom 'season', 'yr', 'mnth', 'weekday', dan 'workingday' sesuai nilai yang didefinisikan di file Readme.txt
+
+# Mengubah nilai kolom 'season' menjadi nilai kategori
+season_mapping = {
+    1: 'Spring',
+    2: 'Summer',
+    3: 'Fall',
+    4: 'Winter'
+}
+hour_df['season'] = hour_df['season'].map(season_mapping)
+# Mengubah nilai kolom 'yr' menjadi nilai tahun aslinya
+yr_mapping = {
+    0: 2011,
+    1: 2012
+}
+hour_df['yr'] = hour_df['yr'].map(yr_mapping)
+# Mengubah nilai kolom 'mnth' menjadi nilai kategori
+mnth_mapping = {
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'August',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December'
+}
+hour_df['mnth'] = hour_df['mnth'].map(mnth_mapping)
+# Mengubah nilai kolom 'weekday' menjadi nilai kategori
+weekday_mapping = {
+    0: 'Sunday',
+    1: 'Monday',
+    2: 'Tuesday',
+    3: 'Wednesday',
+    4: 'Thursday',
+    5: 'Friday',
+    6: 'Saturday'
+}
+hour_df['weekday'] = hour_df['weekday'].map(weekday_mapping)
+# Mengubah nilai kolom 'workingday' menjadi nilai kategori
+workingday_mapping = {
+    0: 'Holiday',
+    1: 'Not Holiday'
+}
+hour_df['workingday'] = hour_df['workingday'].map(workingday_mapping)
+# Mengubah nilai kondisi cuaca yang telah dinormalisasi ke nilai sebenarnya
+hour_df['temp_actual'] = hour_df['temp'] * 41
+hour_df['atemp_actual'] = hour_df['atemp'] * 50
+hour_df['hum_actual'] = hour_df['hum'] * 100
+hour_df['windspeed_actual'] = hour_df['windspeed'] * 67
 
 st.title("Dashboard Proyek Analisis Data (Bike Sharing Dataset)")
 st.text('Nama: Al Jauzi Abdurrohman')
@@ -55,7 +122,72 @@ with tab2:
     st.subheader("Pertanyaan 1: Kapan waktu paling optimal untuk menyediakan lebih banyak sepeda untuk direntalkan?")
     st.text('Untuk menjawab pertanyaan ini, kita akan membuat visualisasi jumlah penyewa sepeda berdasarkan musim, bulan, jam, hari, dan kondisi hari.')
     st.text('Visualisasi ini akan membantu kita memahami kapan waktu paling ramai penyewaan sepeda.')
-    st.image("https://raw.githubusercontent.com/aljauzr/pad-submission-dicoding/refs/heads/main/dashboard/img1.png", caption="Visualisasi: Tren Penyewaan Sepeda Berdasarkan Waktu Terbaik", use_container_width=True)
+    
+    # Buat kanvas visualisasi
+    fig, axs = plt.subplots(3, 2, figsize=(16, 14))
+    plt.subplots_adjust(hspace=0.4, wspace=0.3)
+
+    # Visualisasi 1
+    mean_cnt_per_season = hour_df.groupby('season')['cnt'].mean().reset_index()
+    max_value = mean_cnt_per_season['cnt'].max()
+    colors = ['#72BCD4' if val == max_value else '#D3D3D3' for val in mean_cnt_per_season['cnt']]
+    sns.barplot(data=mean_cnt_per_season, x='season', y='cnt', palette=colors, hue='season', legend=False, ax=axs[0, 0])
+    for index, row in mean_cnt_per_season.iterrows():
+        axs[0, 0].text(index, row['cnt'], round(row['cnt']), color='black', ha="center", va="bottom")
+    axs[0, 0].set_title('Rata-Rata Jumlah Perentalan Sepeda Berdasarkan Musim')
+    axs[0, 0].set_xlabel('Musim')
+    axs[0, 0].set_ylabel('Rata-Rata Jumlah')
+
+    # Visualisasi 2
+    mean_cnt_per_month = hour_df.groupby('mnth', observed=True)['cnt'].mean().reset_index()
+    month_order = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    mean_cnt_per_month['mnth'] = pd.Categorical(mean_cnt_per_month['mnth'], categories=month_order, ordered=True)
+    mean_cnt_per_month = mean_cnt_per_month.sort_values('mnth')
+    colors = ["#D3D3D3"]*5 + ["#72BCD4"] + ["#D3D3D3"]*2 + ["#72BCD4"] + ["#D3D3D3"]*3
+    sns.barplot(data=mean_cnt_per_month, y='mnth', x='cnt', palette=colors, hue='mnth', ax=axs[0, 1])
+    for i, row in mean_cnt_per_month.iterrows():
+        axs[0, 1].text(row['cnt'] + 1, row['mnth'], round(row['cnt']), va='center', color='black')
+    axs[0, 1].set_title('Rata-Rata Jumlah Perentalan Sepeda Berdasarkan Bulan')
+    axs[0, 1].set_xlabel('Rata-Rata Jumlah')
+    axs[0, 1].set_ylabel('Bulan')
+
+    # Visualisasi 3
+    mean_cnt_per_hour = hour_df.groupby('hr')['cnt'].mean().reset_index()
+    sns.lineplot(data=mean_cnt_per_hour, x='hr', y='cnt', marker='o', color='#72BCD4', ax=axs[1, 0])
+    axs[1, 0].set_title('Rata-Rata Jumlah Perentalan Sepeda per Jam')
+    axs[1, 0].set_xlabel('Jam')
+    axs[1, 0].set_ylabel('Rata-Rata Jumlah')
+    axs[1, 0].set_xticks(range(0, 24))
+    axs[1, 0].grid(True)
+
+    # Visualisasi 4
+    mean_cnt_per_weekday = hour_df.groupby('weekday', observed=True)['cnt'].mean().reset_index()
+    weekday_order = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    mean_cnt_per_weekday['weekday'] = pd.Categorical(mean_cnt_per_weekday['weekday'], categories=weekday_order, ordered=True)
+    mean_cnt_per_weekday = mean_cnt_per_weekday.sort_values('weekday')
+    colors = ["#D3D3D3", "#D3D3D3", "#D3D3D3", "#D3D3D3", "#72BCD4", "#72BCD4", "#D3D3D3"]
+    sns.barplot(data=mean_cnt_per_weekday, y='weekday', x='cnt', palette=colors, hue='weekday', ax=axs[1, 1])
+    for i, row in mean_cnt_per_weekday.iterrows():
+        axs[1, 1].text(row['cnt'] + 1, row['weekday'], round(row['cnt']), va='center', color='black')
+    axs[1, 1].set_title('Rata-Rata Jumlah Perentalan Sepeda Berdasarkan Hari')
+    axs[1, 1].set_xlabel('Rata-Rata Jumlah')
+    axs[1, 1].set_ylabel('Hari')
+
+    # Visualisasi 5
+    sum_cnt_per_workingday = hour_df.groupby('workingday')['cnt'].sum().reset_index()
+    colors = ["#D3D3D3", "#72BCD4"]
+    sns.barplot(data=sum_cnt_per_workingday, x='workingday', y='cnt', palette=colors, hue='workingday', legend=False, ax=axs[2, 0])
+    for index, row in sum_cnt_per_workingday.iterrows():
+        axs[2, 0].text(index, row['cnt'], round(row['cnt']), color='black', ha="center", va="bottom")
+    axs[2, 0].set_title('Jumlah Perentalan Sepeda Berdasarkan Kondisi Hari')
+    axs[2, 0].set_xlabel('Libur/Tidak')
+    axs[2, 0].set_ylabel('Jumlah')
+
+    # Kosongkan subplot terakhir
+    axs[2, 1].axis('off')
+
+    # Tampilkan di Streamlit
+    st.pyplot(fig)
     st.text('Berdasarkan hasil analisis data, waktu di mana jumlah perentalan sepeda tertinggi terjadi pada waktu berikut:')
     st.text('Musim: Fall (Musim Gugur)')
     st.text('Bulan: Juni dan September')
@@ -69,76 +201,6 @@ with tab2:
     st.text('Hari: Minggu')
     st.text('Kondisi Hari: Libur')
     st.text('Maka dari itu, penyedia jasa perentalan sepeda dapat meningkatkan suplai sepeda yang akan direntalkan berdasarkan kondisi di tertinggi yang telah disebutkan di atas dan sebaliknya, penyedia dapat mengurangi suplai sepeda yang akan direntalkan berdasarkan kondisi terendah untuk tujuan efisiensi dan menghindari kejadian yang tidak diinginkan.')
-    st.markdown("### Visualisasi Interaktif: Filter Jumlah Penyewaan Sepeda Berdasarkan Kondisi Waktu")
-
-    hour_df['dteday'] = pd.to_datetime(hour_df['dteday'])
-
-    # Multiselect: Pilih tahun (tidak sebagai filter induk)
-    selected_year = st.multiselect(
-        "Pilih Tahun",
-        options=hour_df['yr'].unique(),
-        default=[0],  # Tahun 2011
-        format_func=lambda x: "2011" if x == 0 else "2012"
-    )
-
-    selected_season = st.multiselect(
-        "Pilih Musim",
-        options=sorted(hour_df['season'].unique()),
-        format_func=lambda x: {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}[x]
-    )
-
-    selected_hour = st.multiselect(
-        "Pilih Jam",
-        options=sorted(hour_df['hr'].unique())
-    )
-
-    selected_month = st.multiselect(
-        "Pilih Bulan",
-        options=sorted(hour_df['mnth'].unique()),
-        format_func=lambda x: pd.to_datetime(f'2022-{x}-01').strftime('%B')
-    )
-
-    selected_weekday = st.multiselect(
-        "Pilih Hari",
-        options=sorted(hour_df['weekday'].unique()),
-        format_func=lambda x: ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'][x]
-    )
-
-    selected_workingday = st.multiselect(
-        "Pilih Tipe Hari",
-        options=sorted(hour_df['workingday'].unique()),
-        format_func=lambda x: "Hari Kerja" if x == 1 else "Hari Libur"
-    )
-
-    # Mulai dari data asli
-    df_filtered = hour_df.copy()
-
-    # Terapkan semua filter
-    if selected_year:
-        df_filtered = df_filtered[df_filtered['yr'].isin(selected_year)]
-    if selected_season:
-        df_filtered = df_filtered[df_filtered['season'].isin(selected_season)]
-    if selected_hour:
-        df_filtered = df_filtered[df_filtered['hr'].isin(selected_hour)]
-    if selected_month:
-        df_filtered = df_filtered[df_filtered['mnth'].isin(selected_month)]
-    if selected_weekday:
-        df_filtered = df_filtered[df_filtered['weekday'].isin(selected_weekday)]
-    if selected_workingday:
-        df_filtered = df_filtered[df_filtered['workingday'].isin(selected_workingday)]
-
-    # Tampilkan hasil visualisasi
-    if not df_filtered.empty:
-        total_count = df_filtered['cnt'].count()
-        fig = px.bar(
-            x=["Kondisi Filter"],
-            y=[total_count],
-            labels={'x': 'Kondisi Filter', 'y': 'Jumlah'},
-            title='Jumlah Penyewaan Sepeda Berdasarkan Filter Kondis Waktu'
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("Tidak ada data yang sesuai dengan filter yang dipilih.")
 
 with tab3:
     st.subheader("Pertanyaan 2: Bagaimana pengaruh cuaca terhadap jumlah pengguna sepeda (baik kasual maupun terdaftar)?")
@@ -163,66 +225,3 @@ with tab3:
     st.text('3. Kelembapan yang paling menarik minat orang-orang untuk merental sepeda ada pada angka 40-50.')
     st.text('4. Kecepatan angin yang paling menarik minat orang-orang untuk meerntal sepeda ada pada angka 7-14. Hal ini agak kontra pada proses EDA yang menyatakan maksimal jumlah perentalan sepeda terbanyak ada pada kecepatan angin 0, kemungkinan penyebabnya adalah kesalahan input data.')
     st.text('Maka dari itu, penyedia jasa perentalan sepeda dapat meningkatkan suplai sepeda yang akan direntalkan berdasarkan kondisi di tertinggi yang telah disebutkan di atas dan sebaliknya, penyedia dapat mengurangi suplai sepeda yang akan direntalkan berdasarkan kondisi terendah untuk tujuan efisiensi dan menghindari kejadian yang tidak diinginkan.')
-    st.markdown("### Visualisasi Interaktif: Filter Jumlah Penyewaan Sepeda Berdasarkan Kondisi Cuaca")
-
-    # Mengubah nilai kondisi cuaca yang telah dinormalisasi ke nilai sebenarnya
-    hour_df['temp_actual'] = hour_df['temp'] * 41
-    hour_df['atemp_actual'] = hour_df['atemp'] * 50
-    hour_df['hum_actual'] = hour_df['hum'] * 100
-    hour_df['windspeed_actual'] = hour_df['windspeed'] * 67
-
-    # Multiselect: Pilih tahun (tidak sebagai filter induk)
-    selected_weathersit = st.multiselect(
-        "Kondisi Cuaca",
-        options=hour_df['weathersit'].unique(),
-        default=[1],
-        format_func=lambda x: {1: 'Cerah dan sedikit berawan', 2: 'Mendung dan berawan', 3: 'Sedikit turun salju dan hujan', 4: 'Hujan lebat, salju, badai'}[x]
-    )
-
-    selected_temp = st.multiselect(
-        "Suhu Sebenarnya",
-        options=sorted(hour_df['temp_actual'].unique())
-    )
-
-    selected_atemp = st.multiselect(
-        "Suhu yang Dirasakan",
-        options=sorted(hour_df['atemp_actual'].unique())
-    )
-
-    selected_hum = st.multiselect(
-        "Kelembapan",
-        options=sorted(hour_df['hum_actual'].unique())
-    )
-
-    selected_windspeed = st.multiselect(
-        "Kecepatan Angin",
-        options=sorted(hour_df['windspeed_actual'].unique())
-    )
-
-    # Mulai dari data asli
-    df_filtered = hour_df.copy()
-
-    # Terapkan semua filter
-    if selected_weathersit:
-        df_filtered = df_filtered[df_filtered['weathersit'].isin(selected_weathersit)]
-    if selected_temp:
-        df_filtered = df_filtered[df_filtered['temp_actual'].isin(selected_temp)]
-    if selected_atemp:
-        df_filtered = df_filtered[df_filtered['atemp_actual'].isin(selected_atemp)]
-    if selected_hum:
-        df_filtered = df_filtered[df_filtered['hum_actual'].isin(selected_hum)]
-    if selected_windspeed:
-        df_filtered = df_filtered[df_filtered['windspeed_actual'].isin(selected_windspeed)]
-
-    # Tampilkan hasil visualisasi
-    if not df_filtered.empty:
-        total_count = df_filtered['cnt'].count()
-        fig = px.bar(
-            x=["Kondisi Filter"],
-            y=[total_count],
-            labels={'x': 'Kondisi Filter', 'y': 'Jumlah'},
-            title='Jumlah Penyewaan Sepeda Berdasarkan Filter Kondisi Cuaca'
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.warning("Tidak ada data yang sesuai dengan filter yang dipilih.")

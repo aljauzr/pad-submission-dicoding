@@ -4,7 +4,7 @@ In main folder, type these commands:
 ## Install requirements
 ```
 python -m venv venv
-venv\Source\Activate
+venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
